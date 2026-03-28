@@ -16,6 +16,7 @@ from src.config import config
 logger = logging.getLogger(__name__)
 
 MODEL = "claude-sonnet-4-5-20250514"
+FALLBACK_MODELS = ["claude-sonnet-4-5-20250514", "claude-sonnet-4-20250514", "claude-3-5-sonnet-20241022"]
 MAX_TURNS = 10
 MAX_TOKENS = 4096
 
@@ -59,13 +60,24 @@ async def run_agent(
         logger.info("Agent turn %d/%d for user %s", turn, MAX_TURNS, user_id)
 
         try:
-            response = client.messages.create(
-                model=MODEL,
-                max_tokens=MAX_TOKENS,
-                system=SYSTEM_PROMPT,
-                tools=TOOL_DEFINITIONS,
-                messages=messages,
-            )
+            response = None
+            last_error = None
+            for model_id in FALLBACK_MODELS:
+                try:
+                    response = client.messages.create(
+                        model=model_id,
+                        max_tokens=MAX_TOKENS,
+                        system=SYSTEM_PROMPT,
+                        tools=TOOL_DEFINITIONS,
+                        messages=messages,
+                    )
+                    break
+                except anthropic.NotFoundError:
+                    last_error = f"Model {model_id} not found"
+                    logger.warning(last_error)
+                    continue
+            if response is None:
+                raise anthropic.APIError(message=last_error or "No available model")
         except anthropic.APIError as e:
             logger.exception("Anthropic API error")
             yield _make_sse_event("error", f"AI APIエラーが発生しました: {str(e)}")
