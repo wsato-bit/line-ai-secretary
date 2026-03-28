@@ -7,6 +7,7 @@ Uses UUID primary keys and PostgreSQL-specific types.
 import enum
 import uuid
 from datetime import datetime, time
+from typing import Optional
 
 from sqlalchemy import (
     ARRAY,
@@ -91,8 +92,8 @@ class User(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     line_user_id: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
-    line_display_name: Mapped[str | None] = mapped_column(String(128))
-    line_picture_url: Mapped[str | None] = mapped_column(Text)
+    line_display_name: Mapped[Optional[str]] = mapped_column(String(128))
+    line_picture_url: Mapped[Optional[str]] = mapped_column(Text)
     role: Mapped[UserRole] = mapped_column(
         Enum(UserRole, name="user_role", native_enum=True),
         nullable=False,
@@ -103,11 +104,11 @@ class User(Base):
         nullable=False,
         default=UserStatus.pending,
     )
-    applied_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    approved_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
-    rejection_reason: Mapped[str | None] = mapped_column(Text)
-    last_active_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    applied_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    approved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    approved_by: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
+    rejection_reason: Mapped[Optional[str]] = mapped_column(Text)
+    last_active_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
@@ -122,12 +123,12 @@ class User(Base):
     event_color_rules: Mapped[list["EventColorRule"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
-    notification_setting: Mapped["NotificationSetting | None"] = relationship(
+    notification_setting: Mapped[Optional["NotificationSetting"]] = relationship(
         back_populates="user", uselist=False, cascade="all, delete-orphan"
     )
     edit_histories: Mapped[list["EditHistory"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     audit_logs: Mapped[list["AuditLog"]] = relationship(back_populates="user", cascade="all, delete-orphan")
-    approver: Mapped["User | None"] = relationship(remote_side=[id], foreign_keys=[approved_by])
+    approver: Mapped[Optional["User"]] = relationship(remote_side=[id], foreign_keys=[approved_by])
 
     def __repr__(self) -> str:
         return f"<User {self.line_display_name} ({self.role.value}/{self.status.value})>"
@@ -144,7 +145,7 @@ class OAuthToken(Base):
     access_token_encrypted: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
     refresh_token_encrypted: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    scopes: Mapped[list[str] | None] = mapped_column(ARRAY(Text))
+    scopes: Mapped[Optional[list[str]]] = mapped_column(ARRAY(Text))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
@@ -188,16 +189,16 @@ class Memo(Base):
     content_type: Mapped[ContentType] = mapped_column(
         Enum(ContentType, name="content_type", native_enum=True), nullable=False
     )
-    category_id: Mapped[uuid.UUID | None] = mapped_column(
+    category_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         UUID(as_uuid=True), ForeignKey("memo_categories.id"), index=True
     )
-    tags: Mapped[list[str] | None] = mapped_column(ARRAY(Text), server_default="{}")
-    image_url: Mapped[str | None] = mapped_column(Text)
-    image_ocr_text: Mapped[str | None] = mapped_column(Text)
-    url: Mapped[str | None] = mapped_column(Text)
-    url_title: Mapped[str | None] = mapped_column(Text)
-    url_summary: Mapped[str | None] = mapped_column(Text)
-    url_thumbnail: Mapped[str | None] = mapped_column(Text)
+    tags: Mapped[Optional[list[str]]] = mapped_column(ARRAY(Text), server_default="{}")
+    image_url: Mapped[Optional[str]] = mapped_column(Text)
+    image_ocr_text: Mapped[Optional[str]] = mapped_column(Text)
+    url: Mapped[Optional[str]] = mapped_column(Text)
+    url_title: Mapped[Optional[str]] = mapped_column(Text)
+    url_summary: Mapped[Optional[str]] = mapped_column(Text)
+    url_thumbnail: Mapped[Optional[str]] = mapped_column(Text)
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
@@ -206,7 +207,7 @@ class Memo(Base):
 
     # Relationships
     user: Mapped["User"] = relationship(back_populates="memos")
-    category: Mapped["MemoCategory | None"] = relationship(back_populates="memos")
+    category: Mapped[Optional["MemoCategory"]] = relationship(back_populates="memos")
 
     def __repr__(self) -> str:
         return f"<Memo {self.id} type={self.content_type.value}>"
@@ -241,9 +242,9 @@ class UnrepliedItem(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
     contact_name: Mapped[str] = mapped_column(String(128), nullable=False)
-    content_memo: Mapped[str | None] = mapped_column(Text)
+    content_memo: Mapped[Optional[str]] = mapped_column(Text)
     registered_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
-    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     is_completed: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
@@ -266,7 +267,7 @@ class EventColorRule(Base):
         Enum(ConfirmationStatus, name="confirmation_status_enum", native_enum=True), nullable=False
     )
     color_id: Mapped[str] = mapped_column(String(16), nullable=False)
-    color_label: Mapped[str | None] = mapped_column(String(32))
+    color_label: Mapped[Optional[str]] = mapped_column(String(32))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     # Relationships
@@ -285,7 +286,7 @@ class NotificationSetting(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), unique=True, nullable=False)
     morning_summary_time: Mapped[time] = mapped_column(Time, default=time(8, 0))
     morning_summary_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
-    reminder_intervals: Mapped[list[int] | None] = mapped_column(ARRAY(Integer), server_default="{30,15,5}")
+    reminder_intervals: Mapped[Optional[list[int]]] = mapped_column(ARRAY(Integer), server_default="{30,15,5}")
     unreplied_threshold_days: Mapped[int] = mapped_column(Integer, default=3)
     unreplied_reminder_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
@@ -308,8 +309,8 @@ class EditHistory(Base):
     entity_type: Mapped[str] = mapped_column(String(64), nullable=False)
     entity_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     action: Mapped[EditAction] = mapped_column(Enum(EditAction, name="edit_action", native_enum=True), nullable=False)
-    before_data: Mapped[dict | None] = mapped_column(JSONB)
-    after_data: Mapped[dict | None] = mapped_column(JSONB)
+    before_data: Mapped[Optional[dict]] = mapped_column(JSONB)
+    after_data: Mapped[Optional[dict]] = mapped_column(JSONB)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     # Relationships
@@ -323,17 +324,17 @@ class AuditLog(Base):
     __tablename__ = "audit_logs"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), index=True)
+    user_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), index=True)
     action: Mapped[str] = mapped_column(String(128), nullable=False)
-    resource: Mapped[str | None] = mapped_column(String(128))
-    resource_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
-    ip_address: Mapped[str | None] = mapped_column(INET)
-    user_agent: Mapped[str | None] = mapped_column(Text)
-    metadata: Mapped[dict | None] = mapped_column(JSONB)
+    resource: Mapped[Optional[str]] = mapped_column(String(128))
+    resource_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True))
+    ip_address: Mapped[Optional[str]] = mapped_column(INET)
+    user_agent: Mapped[Optional[str]] = mapped_column(Text)
+    extra_metadata: Mapped[Optional[dict]] = mapped_column("metadata", JSONB)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     # Relationships
-    user: Mapped["User | None"] = relationship(back_populates="audit_logs")
+    user: Mapped[Optional["User"]] = relationship(back_populates="audit_logs")
 
     def __repr__(self) -> str:
         return f"<AuditLog {self.action} resource={self.resource}>"

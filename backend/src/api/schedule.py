@@ -4,6 +4,8 @@ Provides Google Calendar CRUD operations and color rule management
 via REST API, authenticated with LINE Login token.
 """
 
+from __future__ import annotations
+
 import logging
 from datetime import datetime
 

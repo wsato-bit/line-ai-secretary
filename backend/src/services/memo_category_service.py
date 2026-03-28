@@ -1,5 +1,7 @@
 """Memo category management service."""
 
+from __future__ import annotations
+
 import logging
 import uuid
 

@@ -1,5 +1,7 @@
 """エージェントオーケストレータ - Claude Tool Use自律ループ"""
 
+from __future__ import annotations
+
 import json
 import logging
 from collections.abc import AsyncGenerator

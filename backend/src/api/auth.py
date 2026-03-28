@@ -1,5 +1,7 @@
 """LINE Login OAuth 認証エンドポイント"""
 
+from __future__ import annotations
+
 import logging
 import secrets
 from urllib.parse import urlencode

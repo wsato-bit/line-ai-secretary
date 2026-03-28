@@ -4,6 +4,8 @@ Provides Gmail read/reply operations and email filter management
 via REST API, authenticated with LINE Login token.
 """
 
+from __future__ import annotations
+
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query

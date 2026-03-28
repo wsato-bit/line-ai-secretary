@@ -1,5 +1,7 @@
 """ショートカットワード検出 - メッセージ前処理でエージェントにヒントを付加"""
 
+from __future__ import annotations
+
 import re
 from dataclasses import dataclass
 

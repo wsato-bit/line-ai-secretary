@@ -3,6 +3,8 @@
 Logs all API operations to the AuditLog table.
 """
 
+from __future__ import annotations
+
 import logging
 import time
 import uuid

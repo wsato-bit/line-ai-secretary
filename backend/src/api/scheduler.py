@@ -1,5 +1,7 @@
 """Scheduler API endpoints - triggered by Cloud Scheduler."""
 
+from __future__ import annotations
+
 import logging
 
 from fastapi import APIRouter, Header, HTTPException

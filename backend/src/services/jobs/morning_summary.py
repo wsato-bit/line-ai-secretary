@@ -1,5 +1,7 @@
 """Morning summary job - sends daily schedule/email/unreplied overview via LINE."""
 
+from __future__ import annotations
+
 import logging
 from datetime import datetime, timedelta, timezone
 

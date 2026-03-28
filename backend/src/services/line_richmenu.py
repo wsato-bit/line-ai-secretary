@@ -1,5 +1,7 @@
 """LINE Rich Menu 設定・作成ユーティリティ"""
 
+from __future__ import annotations
+
 import logging
 
 from linebot.v3.messaging import (

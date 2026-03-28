@@ -3,6 +3,8 @@
 Single source of truth for type definitions.
 """
 
+from __future__ import annotations
+
 import uuid
 from datetime import datetime, time
 

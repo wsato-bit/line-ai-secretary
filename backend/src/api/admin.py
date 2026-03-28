@@ -1,5 +1,7 @@
 """Admin API endpoints for user management."""
 
+from __future__ import annotations
+
 import logging
 import uuid
 

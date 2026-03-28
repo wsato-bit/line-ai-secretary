@@ -1,4 +1,5 @@
 """Monitoring utilities: health checks, structured logging, error reporting."""
+from __future__ import annotations
 
 import logging
 import json
