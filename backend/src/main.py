@@ -10,6 +10,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.config import config
 from src.api.line_webhook import router as line_webhook_router
 from src.api.auth import router as auth_router
+from src.api.memo import router as memo_router
+from src.api.unreplied import router as unreplied_router
+from src.api.schedule import router as schedule_router
+from src.api.email import router as email_router
+from src.api.chat import router as chat_router
 from src.utils.audit_middleware import AuditLogMiddleware
 from src.utils.error_handler import register_error_handlers
 
@@ -38,6 +43,11 @@ app.add_middleware(
 # Routers
 app.include_router(line_webhook_router)
 app.include_router(auth_router)
+app.include_router(memo_router)
+app.include_router(unreplied_router)
+app.include_router(schedule_router)
+app.include_router(email_router)
+app.include_router(chat_router)
 
 
 @app.get("/api/health")

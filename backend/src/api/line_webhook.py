@@ -17,6 +17,8 @@ from linebot.v3.webhooks import (
 )
 
 from src.config import config
+from src.models.database import SessionLocal
+from src.services.agent_line_bridge import handle_line_message, handle_line_postback_approval
 from src.services.line_service import line_service
 
 logger = logging.getLogger(__name__)
@@ -74,8 +76,12 @@ async def _handle_message_event(event: MessageEvent) -> None:
     if isinstance(event.message, TextMessageContent):
         text = event.message.text
         logger.info("Text message from %s: %s", user_id, text[:50])
-        # TODO: AI処理パイプラインへ接続
-        await line_service.reply_text(reply_token, f"メッセージを受け取りました: {text[:100]}")
+        # エージェント経由で応答
+        db = SessionLocal()
+        try:
+            await handle_line_message(user_id, text, reply_token, db)
+        finally:
+            db.close()
 
     elif isinstance(event.message, ImageMessageContent):
         logger.info("Image message from %s", user_id)
@@ -129,7 +135,20 @@ async def _handle_postback_event(event: PostbackEvent) -> None:
     params = dict(pair.split("=", 1) for pair in data.split("&") if "=" in pair)
     action = params.get("action", "")
 
-    if action == "schedule":
+    if action == "agent_approve" or action == "agent_reject":
+        approval_id = params.get("approval_id", "")
+        db = SessionLocal()
+        try:
+            await handle_line_postback_approval(
+                user_id=user_id,
+                reply_token=reply_token,
+                action="approve" if action == "agent_approve" else "reject",
+                approval_id=approval_id,
+                db=db,
+            )
+        finally:
+            db.close()
+    elif action == "schedule":
         await line_service.reply_text(reply_token, "予定を確認しています...")
         # TODO: スケジュール取得処理
     elif action == "memo":
