@@ -15,6 +15,9 @@ from src.api.unreplied import router as unreplied_router
 from src.api.schedule import router as schedule_router
 from src.api.email import router as email_router
 from src.api.chat import router as chat_router
+from src.api.scheduler import router as scheduler_router
+from src.api.notifications import router as notifications_router
+from src.api.admin import router as admin_router
 from src.utils.audit_middleware import AuditLogMiddleware
 from src.utils.error_handler import register_error_handlers
 
@@ -48,6 +51,9 @@ app.include_router(unreplied_router)
 app.include_router(schedule_router)
 app.include_router(email_router)
 app.include_router(chat_router)
+app.include_router(scheduler_router)
+app.include_router(notifications_router)
+app.include_router(admin_router)
 
 
 @app.get("/api/health")

@@ -39,6 +39,9 @@ class Config:
     # Security
     ENCRYPTION_KEY: str = os.environ.get("ENCRYPTION_KEY", "")
 
+    # Job Scheduler Auth
+    JOB_AUTH_SECRET: str = os.environ.get("JOB_AUTH_SECRET", "")
+
     # CORS
     FRONTEND_URL: str = os.environ.get("FRONTEND_URL", "http://localhost:3847")
 
