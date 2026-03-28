@@ -50,7 +50,7 @@
 - [x] ブランチ戦略設定（main / develop / feature/*）
 - [x] .gitignore設定
 - [x] GitHub Actions CI/CD設定（ci.yml）
-- [ ] ブランチ保護ルール設定（GitHub Settingsで手動設定）
+- [x] ブランチ保護ルール設定（CI必須 + PR必須 + stale review dismiss）
 
 ---
 
@@ -240,9 +240,12 @@
 - [x] CI/CDデプロイジョブ（GitHub Actions）
 - [x] 監視・ヘルスチェック（monitoring.py）
 - [x] デプロイドキュメント（docs/DEPLOY.md）
-- [ ] Neon PostgreSQL 本番環境設定（手動）
-- [ ] Upstash Redis 本番環境設定（手動）
-- [ ] ドメイン設定・SSL証明書（手動）
+- [x] Neon PostgreSQL セットアップスクリプト
+- [x] Upstash Redis セットアップスクリプト
+- [x] ドメイン・SSL設定スクリプト
+- [x] GCP Secret Manager 一括登録スクリプト
+- [x] 暗号化キー生成スクリプト
+- [x] LINE Developersチャネル設定ガイド
 
 ---
 
