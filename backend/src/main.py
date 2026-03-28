@@ -8,6 +8,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.config import config
+from src.api.line_webhook import router as line_webhook_router
+from src.api.auth import router as auth_router
+from src.utils.audit_middleware import AuditLogMiddleware
+from src.utils.error_handler import register_error_handlers
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -17,7 +21,11 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# CORS
+# Error handlers
+register_error_handlers(app)
+
+# Middleware (order matters: last added = first executed)
+app.add_middleware(AuditLogMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[config.FRONTEND_URL],
@@ -25,6 +33,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# Routers
+app.include_router(line_webhook_router)
+app.include_router(auth_router)
 
 
 @app.get("/api/health")

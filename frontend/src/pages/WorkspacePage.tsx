@@ -1,4 +1,4 @@
-import { Box, Typography, Grid, Paper } from '@mui/material';
+import { Box, Typography, Grid2 as Grid, Paper } from '@mui/material';
 
 function WorkspacePage() {
   return (
