@@ -41,6 +41,12 @@ SYSTEM_PROMPT = """あなたは「LINE AI Secretary」です。
 - 「〇〇を削除」→ search_memoで検索しdelete_memoで削除する
 - 「〇〇の件は返信した」「〇〇に返信済み」→ list_unrepliedで検索しcomplete_unrepliedで完了にする
 
+### 「完了」操作の判定ルール
+- 「〇〇完了」→ まずsearch_memoで「〇〇」を検索する。**list_unrepliedは呼ばない**
+- 「〇〇に返信した」「〇〇返信済み」→ list_unrepliedで検索する。search_memoは呼ばない
+- 「未返信」という単語が含まれる場合のみlist_unrepliedを使う
+- メモと未返信を同時に検索してはならない。ユーザーの意図が曖昧な場合は「メモの完了ですか？未返信の完了ですか？」と確認する
+
 ### 候補が複数ある場合の対応
 検索結果が2件以上ヒットした場合は、**すぐに実行せず**番号付きリストで候補を提示する：
 ```
