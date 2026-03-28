@@ -8,7 +8,7 @@ from typing import Any
 
 import redis.asyncio as aioredis
 from sqlalchemy import text
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 
 from src.config import config
 
@@ -20,6 +20,7 @@ router = APIRouter(prefix="/api", tags=["monitoring"])
 # ---------------------------------------------------------------------------
 # Structured Logging for Cloud Logging
 # ---------------------------------------------------------------------------
+
 
 class CloudLoggingFormatter(logging.Formatter):
     """JSON formatter compatible with Google Cloud Logging."""
@@ -65,6 +66,7 @@ def setup_cloud_logging() -> None:
 # ---------------------------------------------------------------------------
 # Health Check Helpers
 # ---------------------------------------------------------------------------
+
 
 async def _check_database() -> dict[str, Any]:
     """Check database connectivity."""
@@ -120,6 +122,7 @@ async def _check_line() -> dict[str, Any]:
 # Health Check Endpoints
 # ---------------------------------------------------------------------------
 
+
 @router.get("/health")
 async def health_check_simple():
     """Lightweight health check for Cloud Run probes."""
@@ -148,6 +151,7 @@ async def health_check_detailed():
 # ---------------------------------------------------------------------------
 # Error Reporting
 # ---------------------------------------------------------------------------
+
 
 def report_error(error: Exception, context: dict[str, Any] | None = None) -> None:
     """Log an error with structured context for Cloud Error Reporting.

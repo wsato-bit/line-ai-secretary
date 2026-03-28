@@ -58,11 +58,7 @@ def ensure_default_color_rules(user_id: str, db: Session) -> list[EventColorRule
     Returns:
         List of EventColorRule records (existing or newly created).
     """
-    existing = (
-        db.query(EventColorRule)
-        .filter(EventColorRule.user_id == user_id)
-        .all()
-    )
+    existing = db.query(EventColorRule).filter(EventColorRule.user_id == user_id).all()
 
     if existing:
         return existing
@@ -117,10 +113,7 @@ def get_color_for_event(
 
     # Fallback to defaults
     for default in DEFAULT_COLOR_RULES:
-        if (
-            default["event_type"] == event_type
-            and default["confirmation_status"] == confirmation_status
-        ):
+        if default["event_type"] == event_type and default["confirmation_status"] == confirmation_status:
             return default["color_id"]
 
     return "1"  # Lavender as ultimate fallback

@@ -26,12 +26,7 @@ def get_filters(user_id: str, db: Session) -> list[dict]:
     Returns:
         List of filter dicts.
     """
-    filters = (
-        db.query(EmailFilter)
-        .filter(EmailFilter.user_id == user_id)
-        .order_by(EmailFilter.created_at.desc())
-        .all()
-    )
+    filters = db.query(EmailFilter).filter(EmailFilter.user_id == user_id).order_by(EmailFilter.created_at.desc()).all()
     return [_filter_to_dict(f) for f in filters]
 
 
@@ -143,11 +138,7 @@ def apply_filters(user_id: str, db: Session, emails: list[dict]) -> list[dict]:
     Returns:
         Filtered and re-categorized email list.
     """
-    filters = (
-        db.query(EmailFilter)
-        .filter(EmailFilter.user_id == user_id)
-        .all()
-    )
+    filters = db.query(EmailFilter).filter(EmailFilter.user_id == user_id).all()
 
     if not filters:
         return emails

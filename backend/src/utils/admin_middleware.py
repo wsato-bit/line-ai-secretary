@@ -1,7 +1,6 @@
 """Admin authentication and authorization middleware."""
 
 import logging
-import uuid
 
 import httpx
 from fastapi import Depends, HTTPException, Request

@@ -86,10 +86,13 @@ async def run_agent(
                 tool_input = block.input
                 tool_use_id = block.id
 
-                yield _make_sse_event("tool_start", {
-                    "tool_name": tool_name,
-                    "tool_input": tool_input,
-                })
+                yield _make_sse_event(
+                    "tool_start",
+                    {
+                        "tool_name": tool_name,
+                        "tool_input": tool_input,
+                    },
+                )
 
                 # ツール実行
                 try:
@@ -107,42 +110,59 @@ async def run_agent(
                 if isinstance(result, ApprovalRequest):
                     yield _make_sse_event("approval_request", result.to_dict())
                     # 承認待ちとしてツール結果を返す
-                    tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": tool_use_id,
-                        "content": json.dumps({
+                    tool_results.append(
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": tool_use_id,
+                            "content": json.dumps(
+                                {
+                                    "status": "approval_required",
+                                    "description": result.description,
+                                    "message": "ユーザーの承認を待っています。承認されるまで実行を保留します。",
+                                },
+                                ensure_ascii=False,
+                            ),
+                        }
+                    )
+                    yield _make_sse_event(
+                        "tool_end",
+                        {
+                            "tool_name": tool_name,
                             "status": "approval_required",
-                            "description": result.description,
-                            "message": "ユーザーの承認を待っています。承認されるまで実行を保留します。",
-                        }, ensure_ascii=False),
-                    })
-                    yield _make_sse_event("tool_end", {
-                        "tool_name": tool_name,
-                        "status": "approval_required",
-                    })
+                        },
+                    )
                 else:
-                    tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": tool_use_id,
-                        "content": json.dumps(result, ensure_ascii=False),
-                    })
-                    yield _make_sse_event("tool_end", {
-                        "tool_name": tool_name,
-                        "status": "ok" if "error" not in result else "error",
-                    })
+                    tool_results.append(
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": tool_use_id,
+                            "content": json.dumps(result, ensure_ascii=False),
+                        }
+                    )
+                    yield _make_sse_event(
+                        "tool_end",
+                        {
+                            "tool_name": tool_name,
+                            "status": "ok" if "error" not in result else "error",
+                        },
+                    )
 
         # アシスタントメッセージを会話履歴に追加
-        messages.append({
-            "role": "assistant",
-            "content": [_block_to_dict(b) for b in assistant_content],
-        })
+        messages.append(
+            {
+                "role": "assistant",
+                "content": [_block_to_dict(b) for b in assistant_content],
+            }
+        )
 
         # ツール結果がある場合、会話を続行
         if has_tool_use and tool_results:
-            messages.append({
-                "role": "user",
-                "content": tool_results,
-            })
+            messages.append(
+                {
+                    "role": "user",
+                    "content": tool_results,
+                }
+            )
         else:
             # ツール使用なし = 最終応答完了
             break

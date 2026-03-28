@@ -44,7 +44,8 @@ def check_upcoming_events(
     except Exception:
         logger.warning(
             "Could not fetch calendar for reminder check, user %s",
-            user_id, exc_info=True,
+            user_id,
+            exc_info=True,
         )
         return []
 
@@ -55,9 +56,7 @@ def check_upcoming_events(
             continue  # Skip all-day events
 
         try:
-            event_start = datetime.fromisoformat(
-                start_str.replace("Z", "+00:00")
-            )
+            event_start = datetime.fromisoformat(start_str.replace("Z", "+00:00"))
         except ValueError:
             continue
 
@@ -101,12 +100,15 @@ async def send_event_reminder(
         await line_service.push_text(line_user_id, text)
         logger.info(
             "Event reminder sent: %s, %d min before, to %s",
-            title, minutes_until, line_user_id,
+            title,
+            minutes_until,
+            line_user_id,
         )
     except Exception:
         logger.error(
             "Failed to send event reminder to %s",
-            line_user_id, exc_info=True,
+            line_user_id,
+            exc_info=True,
         )
         raise
 
@@ -124,11 +126,7 @@ async def run_event_reminders() -> dict:
     error_count = 0
 
     try:
-        settings = (
-            db.query(NotificationSetting)
-            .filter(NotificationSetting.reminder_intervals.isnot(None))
-            .all()
-        )
+        settings = db.query(NotificationSetting).filter(NotificationSetting.reminder_intervals.isnot(None)).all()
 
         for setting in settings:
             intervals = setting.reminder_intervals
@@ -155,7 +153,9 @@ async def run_event_reminders() -> dict:
             for event, minutes_until in upcoming:
                 try:
                     await send_event_reminder(
-                        user.line_user_id, event, minutes_until,
+                        user.line_user_id,
+                        event,
+                        minutes_until,
                     )
                     sent_count += 1
                 except Exception:
@@ -165,6 +165,7 @@ async def run_event_reminders() -> dict:
 
     logger.info(
         "Event reminder job complete: sent=%d, errors=%d",
-        sent_count, error_count,
+        sent_count,
+        error_count,
     )
     return {"sent_count": sent_count, "error_count": error_count}

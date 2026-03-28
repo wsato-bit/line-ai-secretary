@@ -31,12 +31,7 @@ def list_categories(user_id: uuid.UUID, db: Session) -> list[MemoCategory]:
         List of MemoCategory objects.
     """
     ensure_default_categories(user_id, db)
-    return (
-        db.query(MemoCategory)
-        .filter(MemoCategory.user_id == user_id)
-        .order_by(MemoCategory.sort_order)
-        .all()
-    )
+    return db.query(MemoCategory).filter(MemoCategory.user_id == user_id).order_by(MemoCategory.sort_order).all()
 
 
 def create_category(user_id: uuid.UUID, name: str, db: Session) -> MemoCategory:
@@ -53,11 +48,7 @@ def create_category(user_id: uuid.UUID, name: str, db: Session) -> MemoCategory:
     Raises:
         ValueError: If a category with the same name already exists.
     """
-    existing = (
-        db.query(MemoCategory)
-        .filter(MemoCategory.user_id == user_id, MemoCategory.name == name)
-        .first()
-    )
+    existing = db.query(MemoCategory).filter(MemoCategory.user_id == user_id, MemoCategory.name == name).first()
     if existing:
         raise ValueError(f"Category '{name}' already exists")
 
@@ -104,11 +95,7 @@ def update_category(
     Raises:
         ValueError: If a category with the new name already exists.
     """
-    category = (
-        db.query(MemoCategory)
-        .filter(MemoCategory.id == category_id, MemoCategory.user_id == user_id)
-        .first()
-    )
+    category = db.query(MemoCategory).filter(MemoCategory.id == category_id, MemoCategory.user_id == user_id).first()
     if not category:
         return None
 
@@ -150,11 +137,7 @@ def delete_category(
     Returns:
         True if deleted, False if not found or is default.
     """
-    category = (
-        db.query(MemoCategory)
-        .filter(MemoCategory.id == category_id, MemoCategory.user_id == user_id)
-        .first()
-    )
+    category = db.query(MemoCategory).filter(MemoCategory.id == category_id, MemoCategory.user_id == user_id).first()
     if not category:
         return False
 
@@ -184,11 +167,7 @@ def reorder_categories(
     Returns:
         Updated list of MemoCategory objects in new order.
     """
-    categories = (
-        db.query(MemoCategory)
-        .filter(MemoCategory.user_id == user_id)
-        .all()
-    )
+    categories = db.query(MemoCategory).filter(MemoCategory.user_id == user_id).all()
     category_map = {cat.id: cat for cat in categories}
 
     for order, cat_id in enumerate(category_ids):
@@ -198,12 +177,7 @@ def reorder_categories(
     db.commit()
 
     logger.info("Categories reordered for user %s", user_id)
-    return (
-        db.query(MemoCategory)
-        .filter(MemoCategory.user_id == user_id)
-        .order_by(MemoCategory.sort_order)
-        .all()
-    )
+    return db.query(MemoCategory).filter(MemoCategory.user_id == user_id).order_by(MemoCategory.sort_order).all()
 
 
 def ensure_default_categories(user_id: uuid.UUID, db: Session) -> None:
@@ -213,11 +187,7 @@ def ensure_default_categories(user_id: uuid.UUID, db: Session) -> None:
         user_id: Owner user ID.
         db: Database session.
     """
-    existing = (
-        db.query(MemoCategory)
-        .filter(MemoCategory.user_id == user_id)
-        .count()
-    )
+    existing = db.query(MemoCategory).filter(MemoCategory.user_id == user_id).count()
     if existing > 0:
         return
 

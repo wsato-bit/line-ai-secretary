@@ -1,7 +1,7 @@
 """Morning summary job - sends daily schedule/email/unreplied overview via LINE."""
 
 import logging
-from datetime import datetime, time, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
 
@@ -9,7 +9,7 @@ from src.models.database import SessionLocal
 from src.models.models import NotificationSetting, User, UserStatus
 from src.services import calendar_service, unreplied_service
 from src.services.line_service import line_service
-from src.services.line_templates import schedule_summary_template, unreplied_list_template
+from src.services.line_templates import schedule_summary_template
 
 logger = logging.getLogger(__name__)
 
@@ -51,11 +51,7 @@ def generate_morning_summary(user_id: str, db: Session) -> str | None:
         logger.warning("Could not fetch calendar for user %s", user_id, exc_info=True)
 
     # Fetch overdue unreplied items
-    setting = (
-        db.query(NotificationSetting)
-        .filter(NotificationSetting.user_id == user.id)
-        .first()
-    )
+    setting = db.query(NotificationSetting).filter(NotificationSetting.user_id == user.id).first()
     threshold = setting.unreplied_threshold_days if setting else 3
     overdue_items = unreplied_service.get_overdue_unreplied(
         user_id=user.id,
@@ -84,9 +80,7 @@ def generate_morning_summary(user_id: str, db: Session) -> str | None:
     if overdue_items:
         lines.append(f"\n⚠️ 未返信({threshold}日超): {len(overdue_items)}件")
         for item in overdue_items[:3]:
-            lines.append(
-                f"  {item['contact_name']} ({item['days_elapsed']}日経過)"
-            )
+            lines.append(f"  {item['contact_name']} ({item['days_elapsed']}日経過)")
         if len(overdue_items) > 3:
             lines.append(f"  ...他 {len(overdue_items) - 3}件")
 
@@ -117,8 +111,10 @@ async def send_morning_summary(user: User, db: Session) -> bool:
         today_str = now_jst.strftime("%Y-%m-%d")
         try:
             events = calendar_service.get_schedule(
-                user_id=str(user.id), db=db,
-                date_from=today_str, date_to=today_str,
+                user_id=str(user.id),
+                db=db,
+                date_from=today_str,
+                date_to=today_str,
             )
             if events:
                 line_events = calendar_service.format_events_for_line(events)
@@ -151,14 +147,9 @@ async def run_morning_summaries() -> dict:
 
     try:
         now_jst = datetime.now(JST)
-        current_time = now_jst.time()
 
         # Find users with morning summary enabled
-        settings = (
-            db.query(NotificationSetting)
-            .filter(NotificationSetting.morning_summary_enabled.is_(True))
-            .all()
-        )
+        settings = db.query(NotificationSetting).filter(NotificationSetting.morning_summary_enabled.is_(True)).all()
 
         for setting in settings:
             # Check if current time is within 5-minute window of configured time
@@ -187,7 +178,8 @@ async def run_morning_summaries() -> dict:
             except Exception:
                 logger.error(
                     "Error sending morning summary for user %s",
-                    setting.user_id, exc_info=True,
+                    setting.user_id,
+                    exc_info=True,
                 )
                 error_count += 1
     finally:
@@ -195,6 +187,7 @@ async def run_morning_summaries() -> dict:
 
     logger.info(
         "Morning summary job complete: sent=%d, errors=%d",
-        sent_count, error_count,
+        sent_count,
+        error_count,
     )
     return {"sent_count": sent_count, "error_count": error_count}

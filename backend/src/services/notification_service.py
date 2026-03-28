@@ -29,11 +29,7 @@ def get_notification_settings(
     Returns:
         NotificationSetting object.
     """
-    setting = (
-        db.query(NotificationSetting)
-        .filter(NotificationSetting.user_id == user_id)
-        .first()
-    )
+    setting = db.query(NotificationSetting).filter(NotificationSetting.user_id == user_id).first()
 
     if setting is None:
         setting = NotificationSetting(

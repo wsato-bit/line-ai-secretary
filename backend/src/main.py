@@ -24,6 +24,7 @@ from src.utils.monitoring import router as monitoring_router, setup_cloud_loggin
 
 # Use structured logging on Cloud Run, standard format locally
 import os as _os
+
 if _os.environ.get("K_SERVICE"):
     setup_cloud_logging()
 else:

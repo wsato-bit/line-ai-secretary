@@ -25,10 +25,19 @@ GMAIL_SCOPES = [
 ]
 
 # Known newsletter / bulk sender domains for auto-exclusion
-NEWSLETTER_DOMAINS = frozenset({
-    "noreply@", "no-reply@", "notifications@", "newsletter@",
-    "marketing@", "info@", "updates@", "digest@", "mailer-daemon@",
-})
+NEWSLETTER_DOMAINS = frozenset(
+    {
+        "noreply@",
+        "no-reply@",
+        "notifications@",
+        "newsletter@",
+        "marketing@",
+        "info@",
+        "updates@",
+        "digest@",
+        "mailer-daemon@",
+    }
+)
 
 BULK_SENDER_PATTERNS = [
     re.compile(r"list-unsubscribe", re.IGNORECASE),
@@ -76,12 +85,7 @@ def get_emails(
     service = _build_gmail_client(user_id, db)
 
     try:
-        result = (
-            service.users()
-            .messages()
-            .list(userId="me", q=query, maxResults=max_results)
-            .execute()
-        )
+        result = service.users().messages().list(userId="me", q=query, maxResults=max_results).execute()
     except Exception as e:
         logger.error("Gmail list messages error: %s", e)
         raise ExternalServiceError(service="Gmail", message=str(e))
@@ -96,8 +100,12 @@ def get_emails(
             msg = (
                 service.users()
                 .messages()
-                .get(userId="me", id=msg_ref["id"], format="metadata",
-                     metadataHeaders=["From", "Subject", "Date", "List-Unsubscribe"])
+                .get(
+                    userId="me",
+                    id=msg_ref["id"],
+                    format="metadata",
+                    metadataHeaders=["From", "Subject", "Date", "List-Unsubscribe"],
+                )
                 .execute()
             )
             email_data = _parse_email_metadata(msg)
@@ -124,12 +132,7 @@ def get_email_body(user_id: str, db: Session, email_id: str) -> str:
     service = _build_gmail_client(user_id, db)
 
     try:
-        msg = (
-            service.users()
-            .messages()
-            .get(userId="me", id=email_id, format="full")
-            .execute()
-        )
+        msg = service.users().messages().get(userId="me", id=email_id, format="full").execute()
     except Exception as e:
         logger.error("Gmail get message error: %s", e)
         raise NotFoundError(resource="Email", resource_id=email_id)
@@ -207,8 +210,7 @@ def send_email_reply(
         original = (
             service.users()
             .messages()
-            .get(userId="me", id=email_id, format="metadata",
-                 metadataHeaders=["From", "Subject", "Message-ID"])
+            .get(userId="me", id=email_id, format="metadata", metadataHeaders=["From", "Subject", "Message-ID"])
             .execute()
         )
     except Exception as e:

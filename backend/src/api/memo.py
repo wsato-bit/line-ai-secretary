@@ -17,6 +17,7 @@ router = APIRouter(prefix="/api/memos", tags=["Memos"])
 
 # ─── Schemas ───────────────────────────────────────────────────
 
+
 class MemoResponse(BaseModel):
     id: str
     content: str
@@ -53,6 +54,7 @@ class ReorderCategoriesRequest(BaseModel):
 
 
 # ─── Helpers ───────────────────────────────────────────────────
+
 
 def _get_user_id_from_header(user_id: str = Query(..., alias="user_id")) -> uuid.UUID:
     """Extract user_id from query parameter.
@@ -95,6 +97,7 @@ def _category_to_response(cat) -> CategoryResponse:
 
 
 # ─── Memo Endpoints ───────────────────────────────────────────
+
 
 @router.get("", response_model=list[MemoResponse])
 def list_memos(
@@ -164,6 +167,7 @@ async def create_memo(
 
 
 # ─── Category Endpoints (registered before /{memo_id} to avoid path conflicts) ─
+
 
 @router.get("/categories", response_model=list[CategoryResponse])
 def list_categories(
@@ -246,6 +250,7 @@ def delete_category(
 
 
 # ─── Memo by ID (after /categories to avoid path conflicts) ───
+
 
 @router.delete("/{memo_id}", status_code=204)
 def delete_memo_endpoint(

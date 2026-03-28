@@ -231,4 +231,4 @@ def _update_line_history(user_id: str, user_message: str, assistant_text: str) -
 
     # 履歴上限
     if len(history) > MAX_HISTORY_MESSAGES * 2:
-        _line_conversation_store[user_id] = history[-(MAX_HISTORY_MESSAGES * 2):]
+        _line_conversation_store[user_id] = history[-(MAX_HISTORY_MESSAGES * 2) :]

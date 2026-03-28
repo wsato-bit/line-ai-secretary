@@ -47,9 +47,7 @@ async def save_memo(
 
     # Get default category (未分類)
     default_category = (
-        db.query(MemoCategory)
-        .filter(MemoCategory.user_id == user_id, MemoCategory.is_default.is_(True))
-        .first()
+        db.query(MemoCategory).filter(MemoCategory.user_id == user_id, MemoCategory.is_default.is_(True)).first()
     )
 
     memo = Memo(
@@ -113,10 +111,7 @@ def search_memo(
     Returns:
         List of matching Memo objects, newest first.
     """
-    q = (
-        db.query(Memo)
-        .filter(Memo.user_id == user_id, Memo.is_deleted.is_(False))
-    )
+    q = db.query(Memo).filter(Memo.user_id == user_id, Memo.is_deleted.is_(False))
 
     if query:
         search_term = f"%{query}%"
@@ -201,11 +196,7 @@ DEFAULT_CATEGORIES = [
 
 def _ensure_default_categories(user_id: uuid.UUID, db: Session) -> None:
     """Create default categories for a user if they don't exist."""
-    existing = (
-        db.query(MemoCategory)
-        .filter(MemoCategory.user_id == user_id)
-        .count()
-    )
+    existing = db.query(MemoCategory).filter(MemoCategory.user_id == user_id).count()
     if existing > 0:
         return
 

@@ -18,7 +18,6 @@ from src.services.email_filter_service import (
     set_email_filter,
 )
 from src.services.gmail_service import (
-    format_emails_for_line,
     get_emails,
     send_email_reply,
     summarize_email,
@@ -141,9 +140,7 @@ async def create_email_filter(
 ):
     """Create a new email filter."""
     try:
-        result = set_email_filter(
-            user_id, db, body.filter_type, body.filter_value, body.action
-        )
+        result = set_email_filter(user_id, db, body.filter_type, body.filter_value, body.action)
         return {"filter": result, "message": "フィルターを作成しました"}
     except ConflictError as e:
         raise HTTPException(status_code=409, detail=str(e.message))

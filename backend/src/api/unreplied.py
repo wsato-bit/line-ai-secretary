@@ -17,6 +17,7 @@ router = APIRouter(prefix="/api/unreplied", tags=["Unreplied"])
 
 # ─── Schemas ───────────────────────────────────────────────────
 
+
 class UnrepliedItemResponse(BaseModel):
     id: str
     contact_name: str
@@ -34,6 +35,7 @@ class CreateUnrepliedRequest(BaseModel):
 
 # ─── Helpers ───────────────────────────────────────────────────
 
+
 def _get_user_id_from_header(user_id: str = Query(..., alias="user_id")) -> uuid.UUID:
     """Extract user_id from query parameter.
 
@@ -46,6 +48,7 @@ def _get_user_id_from_header(user_id: str = Query(..., alias="user_id")) -> uuid
 
 
 # ─── Endpoints ─────────────────────────────────────────────────
+
 
 @router.get("", response_model=list[UnrepliedItemResponse])
 def list_unreplied_items(

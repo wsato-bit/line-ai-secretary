@@ -17,6 +17,7 @@ router = APIRouter(prefix="/api/notifications", tags=["Notifications"])
 
 # ─── Schemas ───────────────────────────────────────────────────
 
+
 class NotificationSettingsResponse(BaseModel):
     morning_summary_time: str
     morning_summary_enabled: bool
@@ -34,6 +35,7 @@ class UpdateNotificationSettingsRequest(BaseModel):
 
 
 # ─── Helpers ───────────────────────────────────────────────────
+
 
 def _get_user_id(user_id: str = Query(..., alias="user_id")) -> uuid.UUID:
     """Extract user_id from query parameter.
@@ -58,6 +60,7 @@ def _setting_to_response(setting) -> dict:
 
 
 # ─── Endpoints ─────────────────────────────────────────────────
+
 
 @router.get("/settings", response_model=NotificationSettingsResponse)
 def get_settings(

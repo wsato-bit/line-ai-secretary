@@ -39,7 +39,9 @@ def register_unreplied(
 
     logger.info(
         "Unreplied item registered: id=%s, contact=%s, user=%s",
-        item.id, contact_name, user_id,
+        item.id,
+        contact_name,
+        user_id,
     )
     return item
 
@@ -74,15 +76,17 @@ def list_unreplied(
             registered = registered.replace(tzinfo=timezone.utc)
         days_elapsed = (now - registered).days
 
-        result.append({
-            "id": str(item.id),
-            "contact_name": item.contact_name,
-            "content_memo": item.content_memo,
-            "registered_at": item.registered_at.isoformat(),
-            "completed_at": item.completed_at.isoformat() if item.completed_at else None,
-            "is_completed": item.is_completed,
-            "days_elapsed": days_elapsed,
-        })
+        result.append(
+            {
+                "id": str(item.id),
+                "contact_name": item.contact_name,
+                "content_memo": item.content_memo,
+                "registered_at": item.registered_at.isoformat(),
+                "completed_at": item.completed_at.isoformat() if item.completed_at else None,
+                "is_completed": item.is_completed,
+                "days_elapsed": days_elapsed,
+            }
+        )
 
     return result
 

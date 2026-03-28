@@ -5,7 +5,7 @@ via REST API, authenticated with LINE Login token.
 """
 
 import logging
-from datetime import date, datetime
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -19,7 +19,7 @@ from src.services.calendar_service import (
     get_schedule,
     update_event,
 )
-from src.services.color_defaults import ensure_default_color_rules, get_color_for_event
+from src.services.color_defaults import ensure_default_color_rules
 from src.models.models import ConfirmationStatus, EventColorRule, EventType
 from src.utils.errors import ExternalServiceError, NotFoundError
 
@@ -219,12 +219,14 @@ async def update_color_rules(
             )
             db.add(rule)
 
-        updated.append({
-            "event_type": rule_data.event_type,
-            "confirmation_status": rule_data.confirmation_status,
-            "color_id": rule_data.color_id,
-            "color_label": rule_data.color_label,
-        })
+        updated.append(
+            {
+                "event_type": rule_data.event_type,
+                "confirmation_status": rule_data.confirmation_status,
+                "color_id": rule_data.color_id,
+                "color_label": rule_data.color_label,
+            }
+        )
 
     db.commit()
     return {"rules": updated, "message": "カラールールを更新しました"}

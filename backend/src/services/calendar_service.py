@@ -5,7 +5,7 @@ free/busy slot finding, and LINE display formatting.
 """
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 from googleapiclient.discovery import build
 from sqlalchemy.orm import Session
@@ -124,9 +124,7 @@ def find_available_slots(
         raise ExternalServiceError(service="Google Calendar", message=str(e))
 
     busy_periods = freebusy.get("calendars", {}).get("primary", {}).get("busy", [])
-    return _calculate_free_slots(
-        busy_periods, time_min, time_max, duration_minutes
-    )
+    return _calculate_free_slots(busy_periods, time_min, time_max, duration_minutes)
 
 
 def create_event(
@@ -148,9 +146,7 @@ def create_event(
     service = _build_calendar_client(user_id, db)
 
     event_type = EventType(event_data.get("event_type", "business"))
-    confirmation = ConfirmationStatus(
-        event_data.get("confirmation_status", "confirmed")
-    )
+    confirmation = ConfirmationStatus(event_data.get("confirmation_status", "confirmed"))
     color_id = get_color_for_event(user_id, db, event_type, confirmation)
 
     body = {
@@ -167,11 +163,7 @@ def create_event(
         body["status"] = "tentative"
 
     try:
-        created = (
-            service.events()
-            .insert(calendarId="primary", body=body)
-            .execute()
-        )
+        created = service.events().insert(calendarId="primary", body=body).execute()
     except Exception as e:
         logger.error("Google Calendar create event error: %s", e)
         raise ExternalServiceError(service="Google Calendar", message=str(e))
@@ -201,11 +193,7 @@ def update_event(
 
     # Fetch existing event
     try:
-        existing = (
-            service.events()
-            .get(calendarId="primary", eventId=event_id)
-            .execute()
-        )
+        existing = service.events().get(calendarId="primary", eventId=event_id).execute()
     except Exception as e:
         logger.error("Google Calendar get event error: %s", e)
         raise NotFoundError(resource="Calendar Event", resource_id=event_id)
@@ -223,19 +211,11 @@ def update_event(
         existing["end"] = _build_time_field(updates["end"])
     if "event_type" in updates or "confirmation_status" in updates:
         event_type = EventType(updates.get("event_type", "business"))
-        confirmation = ConfirmationStatus(
-            updates.get("confirmation_status", "confirmed")
-        )
-        existing["colorId"] = get_color_for_event(
-            user_id, db, event_type, confirmation
-        )
+        confirmation = ConfirmationStatus(updates.get("confirmation_status", "confirmed"))
+        existing["colorId"] = get_color_for_event(user_id, db, event_type, confirmation)
 
     try:
-        updated = (
-            service.events()
-            .update(calendarId="primary", eventId=event_id, body=existing)
-            .execute()
-        )
+        updated = service.events().update(calendarId="primary", eventId=event_id, body=existing).execute()
     except Exception as e:
         logger.error("Google Calendar update event error: %s", e)
         raise ExternalServiceError(service="Google Calendar", message=str(e))
@@ -258,9 +238,7 @@ def delete_event(user_id: str, db: Session, event_id: str) -> bool:
     service = _build_calendar_client(user_id, db)
 
     try:
-        service.events().delete(
-            calendarId="primary", eventId=event_id
-        ).execute()
+        service.events().delete(calendarId="primary", eventId=event_id).execute()
     except Exception as e:
         logger.error("Google Calendar delete event error: %s", e)
         raise ExternalServiceError(service="Google Calendar", message=str(e))
@@ -352,6 +330,7 @@ def _calculate_free_slots(
     Returns:
         List of {"start": str, "end": str} available slots.
     """
+
     def parse_dt(s: str) -> datetime:
         return datetime.fromisoformat(s.replace("Z", "+00:00"))
 
@@ -372,19 +351,23 @@ def _calculate_free_slots(
         if current < busy_start:
             gap = busy_start - current
             if gap >= min_duration:
-                free_slots.append({
-                    "start": current.isoformat(),
-                    "end": busy_start.isoformat(),
-                })
+                free_slots.append(
+                    {
+                        "start": current.isoformat(),
+                        "end": busy_start.isoformat(),
+                    }
+                )
         current = max(current, busy_end)
 
     # Check remaining time after last busy period
     if current < window_end:
         gap = window_end - current
         if gap >= min_duration:
-            free_slots.append({
-                "start": current.isoformat(),
-                "end": window_end.isoformat(),
-            })
+            free_slots.append(
+                {
+                    "start": current.isoformat(),
+                    "end": window_end.isoformat(),
+                }
+            )
 
     return free_slots

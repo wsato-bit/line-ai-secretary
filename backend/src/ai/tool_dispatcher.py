@@ -96,16 +96,14 @@ async def _handle_get_schedule(params: dict, user_id: str, db: Session) -> dict:
 async def _handle_find_available_slots(params: dict, user_id: str, db: Session) -> dict:
     """空き時間検索。"""
     date = params["date"]
-    duration = params.get("duration_minutes", 60)
+    _duration = params.get("duration_minutes", 60)  # noqa: F841 — reserved for future use
     start_h = params.get("start_hour", 9)
     end_h = params.get("end_hour", 18)
     # TODO: Google Calendar API連携
     return {
         "status": "ok",
         "date": date,
-        "available_slots": [
-            {"start": f"{start_h:02d}:00", "end": f"{end_h:02d}:00"}
-        ],
+        "available_slots": [{"start": f"{start_h:02d}:00", "end": f"{end_h:02d}:00"}],
         "message": f"{date}は{start_h}時〜{end_h}時が空いています。",
     }
 
@@ -116,8 +114,7 @@ async def _handle_create_event(params: dict, user_id: str, db: Session) -> dict:
     return {
         "status": "ok",
         "message": (
-            f"予定を作成しました: {params['title']} "
-            f"({params['date']} {params['start_time']}〜{params['end_time']})"
+            f"予定を作成しました: {params['title']} " f"({params['date']} {params['start_time']}〜{params['end_time']})"
         ),
     }
 
@@ -149,7 +146,7 @@ async def _handle_delete_event(params: dict, user_id: str, db: Session) -> dict:
 async def _handle_get_emails(params: dict, user_id: str, db: Session) -> dict:
     """メール一覧取得。"""
     filter_type = params.get("filter", "unread")
-    limit = params.get("limit", 10)
+    _limit = params.get("limit", 10)  # noqa: F841 — reserved for future use
     # TODO: Gmail API連携
     return {
         "status": "ok",
@@ -219,11 +216,7 @@ async def _handle_save_memo(params: dict, user_id: str, db: Session) -> dict:
     # カテゴリ指定がある場合
     cat_name = params.get("category")
     if cat_name:
-        cat = (
-            db.query(MemoCategory)
-            .filter(MemoCategory.user_id == user.id, MemoCategory.name == cat_name)
-            .first()
-        )
+        cat = db.query(MemoCategory).filter(MemoCategory.user_id == user.id, MemoCategory.name == cat_name).first()
         if not cat:
             cat = MemoCategory(user_id=user.id, name=cat_name)
             db.add(cat)
@@ -262,11 +255,7 @@ async def _handle_search_memo(params: dict, user_id: str, db: Session) -> dict:
 
     cat_name = params.get("category")
     if cat_name:
-        cat = (
-            db.query(MemoCategory)
-            .filter(MemoCategory.user_id == user.id, MemoCategory.name == cat_name)
-            .first()
-        )
+        cat = db.query(MemoCategory).filter(MemoCategory.user_id == user.id, MemoCategory.name == cat_name).first()
         if cat:
             query = query.filter(Memo.category_id == cat.id)
 
@@ -279,13 +268,15 @@ async def _handle_search_memo(params: dict, user_id: str, db: Session) -> dict:
 
     results = []
     for m in memos:
-        results.append({
-            "memo_id": str(m.id),
-            "content": m.content[:100],
-            "content_type": m.content_type.value,
-            "tags": m.tags or [],
-            "created_at": m.created_at.isoformat(),
-        })
+        results.append(
+            {
+                "memo_id": str(m.id),
+                "content": m.content[:100],
+                "content_type": m.content_type.value,
+                "tags": m.tags or [],
+                "created_at": m.created_at.isoformat(),
+            }
+        )
 
     return {
         "status": "ok",
@@ -307,11 +298,7 @@ async def _handle_delete_memo(params: dict, user_id: str, db: Session) -> dict:
     except ValueError:
         return {"error": "無効なメモIDです。"}
 
-    memo = (
-        db.query(Memo)
-        .filter(Memo.id == memo_uuid, Memo.user_id == user.id)
-        .first()
-    )
+    memo = db.query(Memo).filter(Memo.id == memo_uuid, Memo.user_id == user.id).first()
     if not memo:
         return {"error": "メモが見つかりません。"}
 
@@ -356,13 +343,15 @@ async def _handle_list_unreplied(params: dict, user_id: str, db: Session) -> dic
 
     results = []
     for item in items:
-        results.append({
-            "unreplied_id": str(item.id),
-            "contact_name": item.contact_name,
-            "content_memo": item.content_memo,
-            "registered_at": item.registered_at.isoformat(),
-            "is_completed": item.is_completed,
-        })
+        results.append(
+            {
+                "unreplied_id": str(item.id),
+                "contact_name": item.contact_name,
+                "content_memo": item.content_memo,
+                "registered_at": item.registered_at.isoformat(),
+                "is_completed": item.is_completed,
+            }
+        )
 
     return {
         "status": "ok",
@@ -384,11 +373,7 @@ async def _handle_complete_unreplied(params: dict, user_id: str, db: Session) ->
     except ValueError:
         return {"error": "無効なIDです。"}
 
-    item = (
-        db.query(UnrepliedItem)
-        .filter(UnrepliedItem.id == item_uuid, UnrepliedItem.user_id == user.id)
-        .first()
-    )
+    item = db.query(UnrepliedItem).filter(UnrepliedItem.id == item_uuid, UnrepliedItem.user_id == user.id).first()
     if not item:
         return {"error": "未返信項目が見つかりません。"}
 
@@ -461,12 +446,10 @@ def _build_approval_description(tool_name: str, tool_input: dict) -> str:
         ),
         "delete_event": lambda p: f"予定（ID: {p.get('event_id', '')}）を削除します。",
         "send_email_reply": lambda p: (
-            f"メール（ID: {p.get('email_id', '')}）に返信します:\n"
-            f"  本文: {p.get('body', '')[:100]}"
+            f"メール（ID: {p.get('email_id', '')}）に返信します:\n" f"  本文: {p.get('body', '')[:100]}"
         ),
         "approve_user": lambda p: (
-            f"ユーザー（ID: {p.get('target_user_id', '')}）を"
-            f"{'承認' if p.get('approve') else '拒否'}します。"
+            f"ユーザー（ID: {p.get('target_user_id', '')}）を" f"{'承認' if p.get('approve') else '拒否'}します。"
         ),
     }
     builder = descriptions.get(tool_name)

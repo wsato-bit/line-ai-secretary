@@ -70,7 +70,7 @@ def delete_image(url: str) -> bool:
         logger.warning("URL does not match expected GCS format: %s", url)
         return False
 
-    blob_name = url[len(prefix):]
+    blob_name = url[len(prefix) :]
     blob = bucket.blob(blob_name)
 
     try:

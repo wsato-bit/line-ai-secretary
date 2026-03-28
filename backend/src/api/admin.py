@@ -19,6 +19,7 @@ router = APIRouter(prefix="/api/admin", tags=["Admin"])
 
 # ─── Schemas ───────────────────────────────────────────────────
 
+
 class UserResponse(BaseModel):
     id: str
     line_user_id: str
@@ -46,6 +47,7 @@ class MessageResponse(BaseModel):
 
 
 # ─── Helpers ───────────────────────────────────────────────────
+
 
 def _user_to_response(user: User) -> UserResponse:
     """Convert User ORM object to response schema."""
@@ -84,6 +86,7 @@ def _user_detail_to_response(detail: dict) -> UserDetailResponse:
 
 
 # ─── Endpoints ─────────────────────────────────────────────────
+
 
 @router.get("/users", response_model=list[UserResponse])
 def list_users(

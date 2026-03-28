@@ -7,6 +7,7 @@ from dataclasses import dataclass
 @dataclass
 class ShortcutHint:
     """ショートカット検出結果。"""
+
     original_message: str
     hint_prefix: str
     detected_keyword: str

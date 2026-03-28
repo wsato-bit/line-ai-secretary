@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 # ─── Base Schemas ────────────────────────────────────────────────
 
+
 class BaseResponse(BaseModel):
     """Standard base for all response schemas."""
 
@@ -43,6 +44,7 @@ class PaginatedResponse(BaseResponse):
 
 # ─── User Schemas ────────────────────────────────────────────────
 
+
 class UserResponse(BaseResponse):
     id: uuid.UUID
     line_user_id: str
@@ -70,6 +72,7 @@ class UserListResponse(PaginatedResponse):
 
 # ─── OAuth Schemas ───────────────────────────────────────────────
 
+
 class OAuthCallbackRequest(BaseModel):
     """OAuth callback data."""
 
@@ -86,6 +89,7 @@ class OAuthTokenResponse(BaseResponse):
 
 
 # ─── Memo Schemas ────────────────────────────────────────────────
+
 
 class MemoCreateRequest(BaseModel):
     """Create a new memo."""
@@ -129,6 +133,7 @@ class MemoListResponse(PaginatedResponse):
 
 # ─── MemoCategory Schemas ────────────────────────────────────────
 
+
 class MemoCategoryCreateRequest(BaseModel):
     name: str = Field(max_length=64)
     sort_order: int = 0
@@ -149,6 +154,7 @@ class MemoCategoryResponse(BaseResponse):
 
 # ─── EmailFilter Schemas ─────────────────────────────────────────
 
+
 class EmailFilterCreateRequest(BaseModel):
     filter_type: str  # sender / domain / subject_pattern
     filter_value: str = Field(max_length=256)
@@ -164,6 +170,7 @@ class EmailFilterResponse(BaseResponse):
 
 
 # ─── UnrepliedItem Schemas ───────────────────────────────────────
+
 
 class UnrepliedItemCreateRequest(BaseModel):
     contact_name: str = Field(max_length=128)
@@ -187,6 +194,7 @@ class UnrepliedItemListResponse(PaginatedResponse):
 
 # ─── EventColorRule Schemas ──────────────────────────────────────
 
+
 class EventColorRuleCreateRequest(BaseModel):
     event_type: str  # business / private
     confirmation_status: str  # confirmed / tentative
@@ -204,6 +212,7 @@ class EventColorRuleResponse(BaseResponse):
 
 
 # ─── NotificationSetting Schemas ─────────────────────────────────
+
 
 class NotificationSettingUpdateRequest(BaseModel):
     morning_summary_time: time | None = None
@@ -226,6 +235,7 @@ class NotificationSettingResponse(BaseResponse):
 
 # ─── EditHistory Schemas ─────────────────────────────────────────
 
+
 class EditHistoryResponse(BaseResponse):
     id: uuid.UUID
     entity_type: str
@@ -237,6 +247,7 @@ class EditHistoryResponse(BaseResponse):
 
 
 # ─── AuditLog Schemas ────────────────────────────────────────────
+
 
 class AuditLogResponse(BaseResponse):
     id: uuid.UUID
@@ -254,6 +265,7 @@ class AuditLogListResponse(PaginatedResponse):
 
 
 # ─── LINE Webhook Schemas ────────────────────────────────────────
+
 
 class LineWebhookEvent(BaseModel):
     """Simplified LINE webhook event."""
@@ -273,6 +285,7 @@ class LineWebhookRequest(BaseModel):
 
 
 # ─── Health / Misc ───────────────────────────────────────────────
+
 
 class HealthResponse(BaseModel):
     status: str = "ok"

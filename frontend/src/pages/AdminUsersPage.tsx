@@ -34,7 +34,7 @@ import {
   CheckCircle as EnableIcon,
   Info as InfoIcon,
 } from '@mui/icons-material';
-import type { User, UserStatus } from '@/types';
+import type { UserStatus } from '@/types';
 import { useAuthStore } from '@/stores/authStore';
 import {
   useUsers,

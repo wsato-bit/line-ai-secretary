@@ -15,12 +15,7 @@ logger = logging.getLogger(__name__)
 
 def list_pending_applications(db: Session) -> list[User]:
     """Return all users with pending status, ordered by applied_at."""
-    return (
-        db.query(User)
-        .filter(User.status == UserStatus.pending)
-        .order_by(User.applied_at.asc().nullsfirst())
-        .all()
-    )
+    return db.query(User).filter(User.status == UserStatus.pending).order_by(User.applied_at.asc().nullsfirst()).all()
 
 
 def list_users(
@@ -57,9 +52,7 @@ def get_user_detail(user_id: uuid.UUID, db: Session) -> dict | None:
         return None
 
     memo_count = (
-        db.query(func.count(Memo.id))
-        .filter(Memo.user_id == user_id, Memo.is_deleted.is_(False))
-        .scalar()
+        db.query(func.count(Memo.id)).filter(Memo.user_id == user_id, Memo.is_deleted.is_(False)).scalar()
     ) or 0
 
     return {

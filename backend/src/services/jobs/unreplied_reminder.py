@@ -87,12 +87,14 @@ async def send_unreplied_reminder(
 
         logger.info(
             "Unreplied reminder sent: %d items to %s",
-            len(items), line_user_id,
+            len(items),
+            line_user_id,
         )
     except Exception:
         logger.error(
             "Failed to send unreplied reminder to %s",
-            line_user_id, exc_info=True,
+            line_user_id,
+            exc_info=True,
         )
         raise
 
@@ -110,11 +112,7 @@ async def run_unreplied_reminders() -> dict:
     error_count = 0
 
     try:
-        settings = (
-            db.query(NotificationSetting)
-            .filter(NotificationSetting.unreplied_reminder_enabled.is_(True))
-            .all()
-        )
+        settings = db.query(NotificationSetting).filter(NotificationSetting.unreplied_reminder_enabled.is_(True)).all()
 
         for setting in settings:
             user = (
@@ -151,6 +149,7 @@ async def run_unreplied_reminders() -> dict:
 
     logger.info(
         "Unreplied reminder job complete: sent=%d, errors=%d",
-        sent_count, error_count,
+        sent_count,
+        error_count,
     )
     return {"sent_count": sent_count, "error_count": error_count}

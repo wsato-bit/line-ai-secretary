@@ -4,7 +4,7 @@ import json
 import logging
 from collections.abc import AsyncGenerator
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -25,12 +25,14 @@ MAX_HISTORY_MESSAGES = 20
 
 class ChatRequest(BaseModel):
     """チャットリクエスト。"""
+
     message: str
     user_id: str
 
 
 class ChatHistoryResponse(BaseModel):
     """会話履歴レスポンス。"""
+
     user_id: str
     messages: list[dict]
 
@@ -118,4 +120,4 @@ def _update_history(user_id: str, user_message: str, assistant_text: str) -> Non
 
     # 履歴の上限管理
     if len(history) > MAX_HISTORY_MESSAGES * 2:
-        _conversation_store[user_id] = history[-(MAX_HISTORY_MESSAGES * 2):]
+        _conversation_store[user_id] = history[-(MAX_HISTORY_MESSAGES * 2) :]
