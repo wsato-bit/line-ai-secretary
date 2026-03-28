@@ -1,0 +1,79 @@
+steps:
+  # Build Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/backend:${SHORT_SHA}'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/backend:latest'
+      - '.'
+    dir: 'backend'
+
+  # Push to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '--all-tags'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/backend'
+
+  # Run DB migrations
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'run'
+      - '--rm'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/backend:${SHORT_SHA}'
+      - 'alembic'
+      - 'upgrade'
+      - 'head'
+    secretEnv: ['DATABASE_URL']
+
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - '${_SERVICE_NAME}'
+      - '--image=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/backend:${SHORT_SHA}'
+      - '--region=${_REGION}'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--min-instances=0'
+      - '--max-instances=5'
+      - '--memory=512Mi'
+      - '--cpu=1'
+      - '--timeout=300'
+      - '--set-secrets'
+      - >-
+        DATABASE_URL=DATABASE_URL:latest,
+        REDIS_URL=REDIS_URL:latest,
+        ANTHROPIC_API_KEY=ANTHROPIC_API_KEY:latest,
+        LINE_CHANNEL_SECRET=LINE_CHANNEL_SECRET:latest,
+        LINE_CHANNEL_ACCESS_TOKEN=LINE_CHANNEL_ACCESS_TOKEN:latest,
+        LINE_LOGIN_CHANNEL_ID=LINE_LOGIN_CHANNEL_ID:latest,
+        LINE_LOGIN_CHANNEL_SECRET=LINE_LOGIN_CHANNEL_SECRET:latest,
+        ENCRYPTION_KEY=ENCRYPTION_KEY:latest,
+        JOB_AUTH_SECRET=JOB_AUTH_SECRET:latest
+      - '--set-env-vars'
+      - >-
+        FRONTEND_URL=${_FRONTEND_URL},
+        GCS_BUCKET_NAME=${_GCS_BUCKET_NAME}
+
+substitutions:
+  _REGION: asia-northeast1
+  _REPO_NAME: line-ai-secretary
+  _SERVICE_NAME: line-ai-secretary-api
+  _FRONTEND_URL: https://line-ai-secretary.vercel.app
+  _GCS_BUCKET_NAME: line-ai-secretary-storage
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/${PROJECT_ID}/secrets/DATABASE_URL/versions/latest
+      env: DATABASE_URL
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+images:
+  - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/backend'

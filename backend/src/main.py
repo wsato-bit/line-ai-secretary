@@ -20,8 +20,14 @@ from src.api.notifications import router as notifications_router
 from src.api.admin import router as admin_router
 from src.utils.audit_middleware import AuditLogMiddleware
 from src.utils.error_handler import register_error_handlers
+from src.utils.monitoring import router as monitoring_router, setup_cloud_logging
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+# Use structured logging on Cloud Run, standard format locally
+import os as _os
+if _os.environ.get("K_SERVICE"):
+    setup_cloud_logging()
+else:
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
@@ -54,11 +60,7 @@ app.include_router(chat_router)
 app.include_router(scheduler_router)
 app.include_router(notifications_router)
 app.include_router(admin_router)
-
-
-@app.get("/api/health")
-async def health_check():
-    return {"status": "ok"}
+app.include_router(monitoring_router)
 
 
 # Graceful shutdown
