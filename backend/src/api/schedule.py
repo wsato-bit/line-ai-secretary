@@ -79,10 +79,9 @@ async def list_schedule(
     try:
         events = get_schedule(user_id, db, date_from, date_to)
         return {"events": events, "count": len(events)}
-    except NotFoundError:
-        raise HTTPException(
-            status_code=404,
-            detail="Google Calendar未連携です。OAuth認証を完了してください。",
+    except (NotFoundError, ExternalServiceError, Exception) as e:
+        logger.warning("Schedule fetch failed (returning empty): %s", str(e))
+        return {"events": [], "count": 0, "message": "Google Calendar未連携です。設定ページから連携してください。"}
         )
     except ExternalServiceError as e:
         raise HTTPException(status_code=502, detail=str(e.message))

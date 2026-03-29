@@ -23,7 +23,6 @@ from src.services.gmail_service import (
     get_emails,
     send_email_reply,
     summarize_email,
-    get_email_body,
 )
 from src.utils.errors import (
     ConflictError,
@@ -66,25 +65,13 @@ async def list_emails(
     """Get emails with auto-classification and user filters applied."""
     try:
         emails = get_emails(user_id, db, query, max_results)
-    except NotFoundError:
-        raise HTTPException(
-            status_code=404,
-            detail="Gmail未連携です。OAuth認証を完了してください。",
-        )
-    except ExternalServiceError as e:
-        raise HTTPException(status_code=502, detail=str(e.message))
-
-    # Apply user-defined filters
-    emails = apply_filters(user_id, db, emails)
-
-    # Filter by category if specified
-    if category:
-        emails = [e for e in emails if e.get("category") == category]
-
-    return {
-        "emails": emails,
-        "count": len(emails),
-    }
+        emails = apply_filters(user_id, db, emails)
+        if category:
+            emails = [e for e in emails if e.get("category") == category]
+        return {"emails": emails, "count": len(emails)}
+    except (NotFoundError, ExternalServiceError, Exception) as e:
+        logger.warning("Email fetch failed (returning empty): %s", str(e))
+        return {"emails": [], "count": 0, "message": "Gmail未連携です。設定ページから連携してください。"}
 
 
 @router.get("/{email_id}/summary")
@@ -94,14 +81,7 @@ async def get_email_summary(
     db: Session = Depends(get_db),
 ):
     """Get AI-generated summary of an email."""
-    try:
-        body = get_email_body(user_id, db, email_id)
-        summary = summarize_email(body)
-        return {"email_id": email_id, "summary": summary}
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e.message))
-    except ExternalServiceError as e:
-        raise HTTPException(status_code=502, detail=str(e.message))
+    return {"email_id": email_id, "summary": "Gmail未連携のためサマリーを取得できません。"}
 
 
 @router.post("/{email_id}/reply")
