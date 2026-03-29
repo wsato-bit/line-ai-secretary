@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from src.models.database import get_db
 from src.services import memo_service, memo_category_service
+from src.utils.resolve_user import resolve_user_id
 
 logger = logging.getLogger(__name__)
 
@@ -58,15 +59,13 @@ class ReorderCategoriesRequest(BaseModel):
 # ─── Helpers ───────────────────────────────────────────────────
 
 
-def _get_user_id_from_header(user_id: str = Query(..., alias="user_id")) -> uuid.UUID:
-    """Extract user_id from query parameter.
-
-    TODO: Replace with proper auth dependency that extracts user from JWT/session.
-    """
+def _resolve(user_id: str, db: Session) -> uuid.UUID:
+    """Resolve user_id (UUID or LINE ID) and return as uuid.UUID."""
     try:
-        return uuid.UUID(user_id)
+        resolved = resolve_user_id(user_id, db)
     except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid user_id format")
+        raise HTTPException(status_code=404, detail="User not found")
+    return uuid.UUID(resolved)
 
 
 def _memo_to_response(memo) -> MemoResponse:
@@ -103,13 +102,15 @@ def _category_to_response(cat) -> CategoryResponse:
 
 @router.get("", response_model=list[MemoResponse])
 def list_memos(
-    user_id: uuid.UUID = Depends(_get_user_id_from_header),
+    user_id: str = Query(..., alias="user_id"),
     query: str | None = Query(None),
     category_id: str | None = Query(None),
     tags: str | None = Query(None, description="Comma-separated tags"),
     db: Session = Depends(get_db),
 ):
     """Search/list memos with optional filters."""
+    resolved_uid = _resolve(user_id, db)
+
     cat_uuid = None
     if category_id:
         try:
@@ -122,7 +123,7 @@ def list_memos(
         tag_list = [t.strip() for t in tags.split(",") if t.strip()]
 
     memos = memo_service.search_memo(
-        user_id=user_id,
+        user_id=resolved_uid,
         db=db,
         query=query,
         category_id=cat_uuid,
@@ -133,13 +134,15 @@ def list_memos(
 
 @router.post("", response_model=MemoResponse, status_code=201)
 async def create_memo(
-    user_id: uuid.UUID = Depends(_get_user_id_from_header),
+    user_id: str = Query(..., alias="user_id"),
     content: str = Form(""),
     content_type: str = Form("text"),
     file: UploadFile | None = File(None),
     db: Session = Depends(get_db),
 ):
     """Create a new memo (multipart: text/image/url)."""
+    resolved_uid = _resolve(user_id, db)
+
     if content_type not in ("text", "image", "url"):
         raise HTTPException(status_code=400, detail="content_type must be text, image, or url")
 
@@ -158,7 +161,7 @@ async def create_memo(
         raise HTTPException(status_code=400, detail="URL is required for url type")
 
     memo = await memo_service.save_memo(
-        user_id=user_id,
+        user_id=resolved_uid,
         content=content,
         content_type=content_type,
         db=db,
@@ -173,23 +176,25 @@ async def create_memo(
 
 @router.get("/categories", response_model=list[CategoryResponse])
 def list_categories(
-    user_id: uuid.UUID = Depends(_get_user_id_from_header),
+    user_id: str = Query(..., alias="user_id"),
     db: Session = Depends(get_db),
 ):
     """List all memo categories for the user."""
-    categories = memo_category_service.list_categories(user_id, db)
+    resolved_uid = _resolve(user_id, db)
+    categories = memo_category_service.list_categories(resolved_uid, db)
     return [_category_to_response(c) for c in categories]
 
 
 @router.post("/categories", response_model=CategoryResponse, status_code=201)
 def create_category(
     body: CreateCategoryRequest,
-    user_id: uuid.UUID = Depends(_get_user_id_from_header),
+    user_id: str = Query(..., alias="user_id"),
     db: Session = Depends(get_db),
 ):
     """Create a new memo category."""
+    resolved_uid = _resolve(user_id, db)
     try:
-        category = memo_category_service.create_category(user_id, body.name, db)
+        category = memo_category_service.create_category(resolved_uid, body.name, db)
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))
     return _category_to_response(category)
@@ -198,16 +203,17 @@ def create_category(
 @router.put("/categories/reorder", response_model=list[CategoryResponse])
 def reorder_categories(
     body: ReorderCategoriesRequest,
-    user_id: uuid.UUID = Depends(_get_user_id_from_header),
+    user_id: str = Query(..., alias="user_id"),
     db: Session = Depends(get_db),
 ):
     """Reorder memo categories."""
+    resolved_uid = _resolve(user_id, db)
     try:
         cat_uuids = [uuid.UUID(cid) for cid in body.category_ids]
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid category_id format in list")
 
-    categories = memo_category_service.reorder_categories(user_id, cat_uuids, db)
+    categories = memo_category_service.reorder_categories(resolved_uid, cat_uuids, db)
     return [_category_to_response(c) for c in categories]
 
 
@@ -215,17 +221,18 @@ def reorder_categories(
 def update_category(
     category_id: str,
     body: UpdateCategoryRequest,
-    user_id: uuid.UUID = Depends(_get_user_id_from_header),
+    user_id: str = Query(..., alias="user_id"),
     db: Session = Depends(get_db),
 ):
     """Update a memo category name."""
+    resolved_uid = _resolve(user_id, db)
     try:
         cat_uuid = uuid.UUID(category_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid category_id format")
 
     try:
-        category = memo_category_service.update_category(user_id, cat_uuid, body.name, db)
+        category = memo_category_service.update_category(resolved_uid, cat_uuid, body.name, db)
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))
 
@@ -237,16 +244,17 @@ def update_category(
 @router.delete("/categories/{category_id}", status_code=204)
 def delete_category(
     category_id: str,
-    user_id: uuid.UUID = Depends(_get_user_id_from_header),
+    user_id: str = Query(..., alias="user_id"),
     db: Session = Depends(get_db),
 ):
     """Delete a memo category."""
+    resolved_uid = _resolve(user_id, db)
     try:
         cat_uuid = uuid.UUID(category_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid category_id format")
 
-    success = memo_category_service.delete_category(user_id, cat_uuid, db)
+    success = memo_category_service.delete_category(resolved_uid, cat_uuid, db)
     if not success:
         raise HTTPException(status_code=404, detail="Category not found or is default")
 
@@ -257,15 +265,16 @@ def delete_category(
 @router.delete("/{memo_id}", status_code=204)
 def delete_memo_endpoint(
     memo_id: str,
-    user_id: uuid.UUID = Depends(_get_user_id_from_header),
+    user_id: str = Query(..., alias="user_id"),
     db: Session = Depends(get_db),
 ):
     """Soft-delete a memo."""
+    resolved_uid = _resolve(user_id, db)
     try:
         mid = uuid.UUID(memo_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid memo_id format")
 
-    success = memo_service.delete_memo(user_id, mid, db)
+    success = memo_service.delete_memo(resolved_uid, mid, db)
     if not success:
         raise HTTPException(status_code=404, detail="Memo not found")

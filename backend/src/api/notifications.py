@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from src.models.database import get_db
 from src.services import notification_service
+from src.utils.resolve_user import resolve_user_id
 
 logger = logging.getLogger(__name__)
 
@@ -39,17 +40,6 @@ class UpdateNotificationSettingsRequest(BaseModel):
 # ─── Helpers ───────────────────────────────────────────────────
 
 
-def _get_user_id(user_id: str = Query(..., alias="user_id")) -> uuid.UUID:
-    """Extract user_id from query parameter.
-
-    TODO: Replace with proper auth dependency that extracts user from JWT/session.
-    """
-    try:
-        return uuid.UUID(user_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid user_id format")
-
-
 def _setting_to_response(setting) -> dict:
     """Convert NotificationSetting ORM object to response dict."""
     return {
@@ -66,24 +56,34 @@ def _setting_to_response(setting) -> dict:
 
 @router.get("/settings", response_model=NotificationSettingsResponse)
 def get_settings(
-    user_id: uuid.UUID = Depends(_get_user_id),
+    user_id: str = Query(..., alias="user_id"),
     db: Session = Depends(get_db),
 ):
     """Get notification settings for a user. Creates defaults if not exist."""
-    setting = notification_service.get_notification_settings(user_id, db)
+    try:
+        resolved_id = resolve_user_id(user_id, db)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    setting = notification_service.get_notification_settings(uuid.UUID(resolved_id), db)
     return _setting_to_response(setting)
 
 
 @router.put("/settings", response_model=NotificationSettingsResponse)
 def update_settings(
     body: UpdateNotificationSettingsRequest,
-    user_id: uuid.UUID = Depends(_get_user_id),
+    user_id: str = Query(..., alias="user_id"),
     db: Session = Depends(get_db),
 ):
     """Update notification settings for a user."""
+    try:
+        resolved_id = resolve_user_id(user_id, db)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="User not found")
+
     updates = body.model_dump(exclude_none=True)
     if not updates:
         raise HTTPException(status_code=400, detail="No fields to update")
 
-    setting = notification_service.update_notification_settings(user_id, updates, db)
+    setting = notification_service.update_notification_settings(uuid.UUID(resolved_id), updates, db)
     return _setting_to_response(setting)
