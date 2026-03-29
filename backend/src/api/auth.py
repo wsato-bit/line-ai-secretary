@@ -31,12 +31,20 @@ class LoginResponse(BaseModel):
     state: str
 
 
+class CallbackUserInfo(BaseModel):
+    id: str
+    lineUserId: str
+    lineDisplayName: str
+    linePictureUrl: str | None = None
+    role: str = "user"
+    status: str = "pending"
+    createdAt: str = ""
+
+
 class CallbackResponse(BaseModel):
-    user_id: str
-    display_name: str
-    picture_url: str | None = None
-    status: str  # "active", "pending_approval", "new"
-    access_token: str
+    user: CallbackUserInfo
+    accessToken: str
+    isNewUser: bool = False
 
 
 class UserInfo(BaseModel):
@@ -65,22 +73,16 @@ async def line_login(request: Request):
     return LoginResponse(authorization_url=authorization_url, state=state)
 
 
-@router.get("/line/callback", response_model=CallbackResponse)
-async def line_callback(
-    request: Request,
-    code: str = Query(...),
-    state: str = Query(...),
-):
+class CallbackRequest(BaseModel):
+    code: str
+    redirectUri: str
+
+
+@router.post("/line/callback", response_model=CallbackResponse)
+async def line_callback(body: CallbackRequest):
     """LINE Login OAuthコールバック。認可コードをトークンに交換。"""
-    # state検証（CSRF対策）
-    if state not in _pending_states:
-        raise HTTPException(status_code=400, detail="Invalid state parameter")
-    del _pending_states[state]
-
-    callback_url = _get_callback_url(request)
-
     # 認可コード → アクセストークン交換
-    token_data = await _exchange_code_for_token(code, callback_url)
+    token_data = await _exchange_code_for_token(body.code, body.redirectUri)
     access_token = token_data.get("access_token")
     if not access_token:
         logger.error("Token exchange failed: %s", token_data)
@@ -96,16 +98,20 @@ async def line_callback(
         raise HTTPException(status_code=400, detail="Failed to get user profile")
 
     # ユーザー登録/ステータス確認
-    user_status = await _resolve_user_status(user_id, display_name, picture_url)
+    user_status, is_new = await _resolve_user_status(user_id, display_name, picture_url)
 
-    logger.info("LINE Login success: user_id=%s, status=%s", user_id, user_status)
+    logger.info("LINE Login success: user_id=%s, status=%s, new=%s", user_id, user_status, is_new)
 
     return CallbackResponse(
-        user_id=user_id,
-        display_name=display_name,
-        picture_url=picture_url,
-        status=user_status,
-        access_token=access_token,
+        user=CallbackUserInfo(
+            id=user_id,
+            lineUserId=user_id,
+            lineDisplayName=display_name,
+            linePictureUrl=picture_url,
+            status=user_status,
+        ),
+        accessToken=access_token,
+        isNewUser=is_new,
     )
 
 
@@ -186,15 +192,38 @@ async def _get_line_profile(access_token: str) -> dict:
         return resp.json()
 
 
-async def _resolve_user_status(user_id: str, display_name: str, picture_url: str | None) -> str:
-    """ユーザー登録状況を解決。新規→仮登録、既存→ステータス返却。"""
-    # TODO: DB検索で既存ユーザー確認
-    # existing_user = await user_repo.get_by_line_user_id(user_id)
-    # if existing_user:
-    #     return existing_user.status  # "active" | "pending_approval" | "suspended"
+async def _resolve_user_status(user_id: str, display_name: str, picture_url: str | None) -> tuple[str, bool]:
+    """ユーザー登録状況を解決。新規→仮登録、既存→ステータス返却。
 
-    # 新規ユーザー: 仮登録して管理者承認待ちへ
-    # TODO: DB登録
-    # await user_repo.create(line_user_id=user_id, display_name=display_name, ...)
-    logger.info("New user registered (pending approval): %s (%s)", user_id, display_name)
-    return "pending_approval"
+    Returns:
+        (status, is_new_user)
+    """
+    from src.models.database import SessionLocal
+    from src.models.models import User
+
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.line_user_id == user_id).first()
+        if user:
+            return user.status.value, False
+
+        # 新規ユーザー: 承認済みで自動登録（開発中）
+        import uuid
+        from datetime import datetime, timezone
+
+        new_user = User(
+            id=uuid.uuid4(),
+            line_user_id=user_id,
+            line_display_name=display_name,
+            line_picture_url=picture_url,
+            role="admin",
+            status="approved",
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
+        )
+        db.add(new_user)
+        db.commit()
+        logger.info("New user auto-registered: %s (%s)", user_id, display_name)
+        return "approved", True
+    finally:
+        db.close()
